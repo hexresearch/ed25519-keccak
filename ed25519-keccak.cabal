@@ -1,0 +1,184 @@
+Name:                ed25519-keccak
+version:             0.25
+Synopsis:            Cryptographic signature ed25519 with alternative
+                     hashunction keccak instead of sha512.
+Description:
+    A repository of cryptographic primitives.
+    .
+    * Hash: SHA3, Keccak
+    .
+    * Asymmetric crypto: Ed25519 (with keccak hash function)
+    .
+    Evaluate the security related to your requirements before using.
+License:             BSD3
+License-file:        LICENSE
+Copyright:           Hexresearch
+Category:            Cryptography
+Stability:           ad-hoc
+Build-Type:          Simple
+Homepage:            https://github.com/hexresearch/ed25519-keccak
+Bug-reports:         https://github.com/hexresearch/ed25519-keccak/issues
+Cabal-Version:       >=1.18
+tested-with:         GHC==8.0.2, GHC==7.10.3, GHC==7.8.4
+extra-doc-files:     README.md CHANGELOG.md
+extra-source-files:  cbits/*.h
+                     cbits/ed25519/*.h
+                     tests/*.hs
+
+source-repository head
+  type: git
+  location: https://github.com/hexresearch/ed25519-keccak
+
+Flag support_rdrand
+  Description:       allow compilation with RDRAND on system and architecture that supports it
+  Default:           True
+  Manual:            True
+
+Flag support_pclmuldq
+  Description:       Allow compilation with pclmuldq on architecture that supports it
+  Default:           False
+  Manual:            True
+
+Flag integer-gmp
+  Description:       Whether or not to use GMP for some functions
+  Default:           True
+  Manual:            True
+
+Flag support_deepseq
+  Description:       add deepseq instances for cryptographic types
+  Default:           True
+  Manual:            True
+
+Flag old_toolchain_inliner
+  Description:       use -fgnu89-inline to workaround an old compiler / linker / glibc issue.
+  Default:           False
+  Manual:            True
+
+Flag check_alignment
+  Description:       extra check on alignment in C layers, which cause lowlevel assert errors. for debugging only.
+  Default:           False
+  Manual:            True
+
+Library
+  Exposed-modules:
+                     -- Crypto.ECC
+                     Crypto.ECC.Edwards25519
+                     Crypto.Error
+                     Crypto.Number.Basic
+                     Crypto.Number.F2m
+                     Crypto.Number.Generate
+                     Crypto.Number.ModArithmetic
+                     Crypto.Number.Serialize
+                     Crypto.Number.Serialize.Internal
+                     Crypto.Hash
+                     Crypto.Hash.IO
+                     Crypto.Hash.Algorithms
+                     Crypto.PubKey.MaskGenFunction
+                     Crypto.PubKey.Ed25519
+  Other-modules:
+                     Crypto.Random
+                     Crypto.Random.Types
+                     Crypto.Random.Entropy
+                     Crypto.Random.EntropyPool
+                     Crypto.Random.Entropy.Unsafe
+
+                     Crypto.Error.Types
+                     Crypto.Number.Compat
+                     Crypto.Hash.Types
+                     Crypto.Hash.SHA3
+                     Crypto.Hash.Keccak
+                     Crypto.Random.Entropy.Source
+                     Crypto.Random.Entropy.Backend
+                     Crypto.Random.SystemDRG
+                     Crypto.PubKey.Internal
+                     Crypto.ECC.Simple.Types
+                     Crypto.ECC.Simple.Prim
+                     Crypto.Internal.Proxy
+                     Crypto.Internal.ByteArray
+                     Crypto.Internal.Compat
+                     Crypto.Internal.CompatPrim
+                     Crypto.Internal.DeepSeq
+                     Crypto.Internal.Imports
+                     Crypto.Internal.Nat
+                     Crypto.Internal.Words
+                     Crypto.Internal.WordArray
+  if impl(ghc < 8.0)
+    Buildable: False
+  else
+    Build-depends:   base
+
+  Build-depends:     bytestring
+                   , memory >= 0.14.14
+                   , basement >= 0.0.6
+                   , ghc-prim
+  ghc-options:       -Wall -fwarn-tabs -optc-O3 -fno-warn-unused-imports
+  if os(linux)
+    extra-libraries: pthread
+  default-language:  Haskell2010
+  cc-options:        -std=gnu99
+  if flag(old_toolchain_inliner)
+    cc-options:      -fgnu89-inline
+  C-sources:         cbits/cryptonite_sha3.c
+                   , cbits/ed25519/ed25519.c
+  include-dirs:      cbits
+                   , cbits/ed25519
+
+  -- FIXME armel or mispel is also little endian.
+  -- might be a good idea to also add a runtime autodetect mode.
+  -- ARCH_ENDIAN_UNKNOWN
+  if (arch(i386) || arch(x86_64))
+    CPP-options: -DARCH_IS_LITTLE_ENDIAN
+
+  if arch(i386)
+    CPP-options: -DARCH_X86
+
+  if arch(x86_64)
+    CPP-options: -DARCH_X86_64
+
+  if flag(support_rdrand) && (arch(i386) || arch(x86_64)) && !os(windows)
+    CPP-options:    -DSUPPORT_RDRAND
+    Other-modules:  Crypto.Random.Entropy.RDRand
+    c-sources:      cbits/cryptonite_rdrand.c
+
+  Other-modules:  Crypto.Random.Entropy.Unix
+
+  if impl(ghc) && flag(integer-gmp)
+    Build-depends:   integer-gmp
+
+  if flag(support_deepseq)
+    CPP-options:     -DWITH_DEEPSEQ_SUPPORT
+    Build-depends:   deepseq
+  if flag(check_alignment)
+    cc-options:     -DWITH_ASSERT_ALIGNMENT
+
+-- Test-Suite test-ed25519-keccak
+--   type:              exitcode-stdio-1.0
+--   hs-source-dirs:    tests
+--   Main-is:           Tests.hs
+--   Other-modules:
+--                      KAT_Ed25519
+--   Build-Depends:     base
+--                    , bytestring
+--                    , memory
+--                    , tasty
+--                    , tasty-quickcheck
+--                    , tasty-hunit
+--                    , tasty-kat
+--                    , ed25519-keccak
+--   ghc-options:       -Wall -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-unused-imports -rtsopts
+--   default-language:  Haskell2010
+
+-- Benchmark bench-ed25519-keccak
+--   type:              exitcode-stdio-1.0
+--   hs-source-dirs:    benchs
+--   Main-is:           Bench.hs
+--   Other-modules:     Number.F2m
+--   Build-Depends:     base
+--                    , bytestring
+--                    , deepseq
+--                    , memory
+--                    , gauge
+--                    , random
+--                    , ed25519-keccak
+--   ghc-options:       -Wall -fno-warn-missing-signatures
+--   default-language:  Haskell2010

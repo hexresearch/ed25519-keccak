@@ -15,12 +15,12 @@ ed25519_hash_init(ed25519_hash_context *ctx) {
 
 static void
 ed25519_hash_update(ed25519_hash_context *ctx, const uint8_t *in, size_t inlen) {
-	cryptonite_keccak_update(ctx, in, inlen);
+	cryptonite_keccak_update(ctx -> sc, in, inlen);
 }
 
 static void
 ed25519_hash_final(ed25519_hash_context *ctx, uint8_t *hash) {
-	cryptonite_keccak_finalize(ctx, 512, hash);
+	cryptonite_keccak_finalize(ctx -> sc, 512, hash);
 }
 
 static void

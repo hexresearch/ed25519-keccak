@@ -231,7 +231,7 @@ void cryptonite_keccak_init(struct sha3_ctx *ctx, uint32_t hashlen)
 	cryptonite_sha3_init(ctx, hashlen);
 }
 
-void cryptonite_keccak_update(struct sha3_ctx *ctx, uint8_t *data, uint32_t len)
+void cryptonite_keccak_update(struct sha3_ctx *ctx, const uint8_t *data, uint32_t len)
 {
 	cryptonite_sha3_update(ctx, data, len);
 }
