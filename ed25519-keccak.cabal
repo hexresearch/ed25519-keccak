@@ -61,7 +61,9 @@ Flag check_alignment
 
 Library
   Exposed-modules:
-                     -- Crypto.ECC
+                     Crypto.NemEd25519
+
+  Other-modules:
                      Crypto.ECC.Edwards25519
                      Crypto.Error
                      Crypto.Number.Basic
@@ -75,7 +77,7 @@ Library
                      Crypto.Hash.Algorithms
                      Crypto.PubKey.MaskGenFunction
                      Crypto.PubKey.Ed25519
-  Other-modules:
+
                      Crypto.Random
                      Crypto.Random.Types
                      Crypto.Random.Entropy
