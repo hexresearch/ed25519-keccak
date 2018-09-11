@@ -1,17 +1,119 @@
-{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE OverloadedStrings #-}
 module KAT_Ed25519 ( tests ) where
 
-import           Crypto.Error
-import qualified Crypto.PubKey.Ed25519 as Ed25519
-import           Imports
-
+-- import           Crypto.Error
+import           Crypto.NemEd25519
+import qualified Crypto.NemEd25519     as Ed25519
+import           Data.ByteString       (ByteString)
+import qualified Data.ByteString.Char8 as BC8
+import qualified Data.ByteString as BS
+import qualified Data.ByteArray as BA
+import Data.Text(Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import qualified Data.ByteString.Lazy as BL
+import Data.Word
+import Numeric
+import Data.List.Split
+import Data.ByteString.Builder
+import           Test.Tasty
+import           Test.Tasty.HUnit
 data Vec = Vec
     { vecSec :: ByteString
     , vecPub :: ByteString
     , vecMsg :: ByteString
     , vecSig :: ByteString
     } deriving (Show,Eq)
+
+katZero :: Int
+katZero = 0
+
+sk :: Text
+sk = "50139824ff0d58eb2d2804c0e2e7b483012093e1c38bfb920a1e7524ab32ca40"
+
+skB :: ByteString
+-- skB = "@\202\&2\171$u\RS\n\146\251\139\195\225\147 \SOH\131\180\231\226\192\EOT(-\235X\r\255$\152\DC3P"
+skB = "P\DC3\152$\255\rX\235-(\EOT\192\226\231\180\131\SOH \147\225\195\139\251\146\n\RSu$\171\&2\202@"
+pk :: Text
+pk = "50e2735ac666b8b5b2fe751e312ec8009ae523a74c1e27b1f236cd8efbc4d260"
+
+pkB :: ByteString
+-- reversed version pkB = "`\210\196\251\142\205\&6\242\177'\RSL\167#\229\154\NUL\200.1\RSu\254\178\181\184f\198Zs\226P"
+pkB = "P\226sZ\198f\184\181\178\254u\RS1.\200\NUL\154\229#\167L\RS'\177\242\&6\205\142\251\196\210`"
+msg :: Text
+msg = "Helloaaaaaaaaaaaaaaaa"
+
+msgB :: ByteString
+msgB = ""
+
+pub :: ByteString
+pub = "\xd7\x5a\x98\x01\x82\xb1\x0a\xb7\xd5\x4b\xfe\xd3\xc9\x64\x07\x3a\x0e\xe1\x72\xf3\xda\xa6\x23\x25\xaf\x02\x1a\x68\xf7\x07\x51\x1a"
+
+testPubKey secKey pubKey  = (p == Ed25519.toPublic s)
+    where
+        ee :: ByteString
+        ee = BA.pack . BA.unpack $ new_p
+        !new_p = Ed25519.toPublic s
+        !p = throwCryptoError $ Ed25519.publicKey pubKey
+        !s = throwCryptoError $ Ed25519.secretKey secKey
+
+
+tests = testGroup "Ed25519 Keccak"
+    [ testCase  "gen secretkey" $ True @=? testPubKey skB pkB
+    ]
+
+
+
+-- | from https://github.com/hexresearch/bc-api/blob/a5cc991a940af19a97b33646b96098bc36dd2e37/nem-api/src/BC/Nem/Utils/Convert.hs
+readHexAsciiChar :: String -> Maybe Word8
+readHexAsciiChar twochars = case readHex twochars of
+    [(w, "")] -> Just w
+    _ -> Nothing
+
+readMayHexToBS :: Text -> Maybe BS.ByteString
+readMayHexToBS s = do
+    wseq <- sequence $ readHexAsciiChar <$> chunksOf 2 (T.unpack s)
+    pure $ BS.pack wseq
+
+
+bsToHex :: BS.ByteString -> Text
+bsToHex = TE.decodeUtf8 . BL.toStrict . toLazyByteString . byteStringHex
+{-
+tests = testGroup "Ed25519 Keccak"
+    [ testCase  "gen secretkey" (Ed25519.generateSecretKey *> pure ())
+    , testGroup "gen publickey" $ map doPublicKeyTest (zip [katZero..] vectors)
+    , testGroup "gen signature" $ map doSignatureTest (zip [katZero..] vectors)
+    , testGroup "verify sig" $ map doVerifyTest (zip [katZero..] vectors)
+    ]
+
+
+
+
+doPublicKeyTest (i, vec) = testCase (show i) (pub @=? Ed25519.toPublic sec)
+  where
+        !pub = throwCryptoError $ Ed25519.publicKey (vecPub vec)
+        !sec = throwCryptoError $ Ed25519.secretKey (vecSec vec)
+
+doSignatureTest (i, vec) = testCase (show i) (sig @=? Ed25519.sign sec pub (vecMsg vec))
+  where
+        !sig = throwCryptoError $ Ed25519.signature (vecSig vec)
+        !pub = throwCryptoError $ Ed25519.publicKey (vecPub vec)
+        !sec = throwCryptoError $ Ed25519.secretKey (vecSec vec)
+
+doVerifyTest (i, vec) = testCase (show i) (True @=? Ed25519.verify pub (vecMsg vec) sig)
+  where
+        !sig = throwCryptoError $ Ed25519.signature (vecSig vec)
+        !pub = throwCryptoError $ Ed25519.publicKey (vecPub vec)
+
+
+test_ = testGroup "Ed25519"
+    [ testCase  "gen secretkey" (Ed25519.generateSecretKey *> pure ())
+    , testGroup "gen publickey" $ map doPublicKeyTest (zip [katZero..] vectors)
+    , testGroup "gen signature" $ map doSignatureTest (zip [katZero..] vectors)
+    , testGroup "verify sig" $ map doVerifyTest (zip [katZero..] vectors)
+    ]
+
+
 
 vectors =
     [ Vec
@@ -45,28 +147,4 @@ vectors =
         , vecSig = "\xdc\x2a\x44\x59\xe7\x36\x96\x33\xa5\x2b\x1b\xf2\x77\x83\x9a\x00\x20\x10\x09\xa3\xef\xbf\x3e\xcb\x69\xbe\xa2\x18\x6c\x26\xb5\x89\x09\x35\x1f\xc9\xac\x90\xb3\xec\xfd\xfb\xc7\xc6\x64\x31\xe0\x30\x3d\xca\x17\x9c\x13\x8a\xc1\x7a\xd9\xbe\xf1\x17\x73\x31\xa7\x04"
         }
     ]
-
-
-doPublicKeyTest (i, vec) = testCase (show i) (pub @=? Ed25519.toPublic sec)
-  where
-        !pub = throwCryptoError $ Ed25519.publicKey (vecPub vec)
-        !sec = throwCryptoError $ Ed25519.secretKey (vecSec vec)
-
-doSignatureTest (i, vec) = testCase (show i) (sig @=? Ed25519.sign sec pub (vecMsg vec))
-  where
-        !sig = throwCryptoError $ Ed25519.signature (vecSig vec)
-        !pub = throwCryptoError $ Ed25519.publicKey (vecPub vec)
-        !sec = throwCryptoError $ Ed25519.secretKey (vecSec vec)
-
-doVerifyTest (i, vec) = testCase (show i) (True @=? Ed25519.verify pub (vecMsg vec) sig)
-  where
-        !sig = throwCryptoError $ Ed25519.signature (vecSig vec)
-        !pub = throwCryptoError $ Ed25519.publicKey (vecPub vec)
-
-
-tests = testGroup "Ed25519"
-    [ testCase  "gen secretkey" (Ed25519.generateSecretKey *> pure ())
-    , testGroup "gen publickey" $ map doPublicKeyTest (zip [katZero..] vectors)
-    , testGroup "gen signature" $ map doSignatureTest (zip [katZero..] vectors)
-    , testGroup "verify sig" $ map doVerifyTest (zip [katZero..] vectors)
-    ]
+-}

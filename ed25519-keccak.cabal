@@ -114,6 +114,9 @@ Library
                    , memory >= 0.14.14
                    , basement >= 0.0.6
                    , ghc-prim
+                   , text
+                   , split
+
   ghc-options:       -Wall -fwarn-tabs -optc-O3 -fno-warn-unused-imports
   if os(linux)
     extra-libraries: pthread
@@ -122,7 +125,7 @@ Library
   if flag(old_toolchain_inliner)
     cc-options:      -fgnu89-inline
   C-sources:         cbits/cryptonite_sha3.c
-                   , cbits/ed25519/ed25519.c
+                   , cbits/ed25519/ed25519-keccak.c
   include-dirs:      cbits
                    , cbits/ed25519
 
@@ -154,22 +157,24 @@ Library
   if flag(check_alignment)
     cc-options:     -DWITH_ASSERT_ALIGNMENT
 
--- Test-Suite test-ed25519-keccak
---   type:              exitcode-stdio-1.0
---   hs-source-dirs:    tests
---   Main-is:           Tests.hs
---   Other-modules:
---                      KAT_Ed25519
---   Build-Depends:     base
---                    , bytestring
---                    , memory
---                    , tasty
---                    , tasty-quickcheck
---                    , tasty-hunit
---                    , tasty-kat
---                    , ed25519-keccak
---   ghc-options:       -Wall -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-unused-imports -rtsopts
---   default-language:  Haskell2010
+Test-Suite test-ed25519-keccak
+   type:              exitcode-stdio-1.0
+   hs-source-dirs:    tests
+   Main-is:           Main.hs
+   Other-modules:
+                      KAT_Ed25519
+   Build-Depends:     base
+                    , bytestring
+                    , memory
+                    , tasty
+                    , tasty-quickcheck
+                    , tasty-hunit
+                    , tasty-kat
+                    , text
+                    , split
+                    , ed25519-keccak
+   ghc-options:       -Wall -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-unused-imports -rtsopts
+   default-language:  Haskell2010
 
 -- Benchmark bench-ed25519-keccak
 --   type:              exitcode-stdio-1.0
