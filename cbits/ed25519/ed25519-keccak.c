@@ -9,9 +9,9 @@
 
 #include "ed25519-donna.h"
 #include "ed25519-keccak.h"
-#include "ed25519-randombytes.h"
+//#include "ed25519-randombytes.h"
 #include "ed25519-hash-keccak.h"
-#include "ed25519-cryptonite-exts.h"
+//#include "ed25519-cryptonite-exts.h"
 
 /*
 	Generates a (extsk[0..31]) and aExt (extsk[32..63])
@@ -19,7 +19,7 @@
 
 DONNA_INLINE static void
 ed25519_extsk(hash_512bits extsk, const ed25519_secret_key sk) {
-	ed25519_hash(extsk, sk, 32);
+	ed25519_hash_keccak(extsk, sk, 32);
 	extsk[0] &= 248;
 	extsk[31] &= 127;
 	extsk[31] |= 64;
@@ -70,7 +70,7 @@ ED25519_FN(ed25519_sign_keccak) (const unsigned char *m, size_t mlen, const ed25
 	ge25519_pack(RS, &R);
 
 	/* S = H(R,A,m).. */
-	ed25519_hram(hram, RS, pk, m, mlen);
+	ed25519_hram_keccak(hram, RS, pk, m, mlen);
 	expand256_modm(S, hram, 64);
 
 	/* S = H(R,A,m)a */
@@ -95,7 +95,7 @@ ED25519_FN(ed25519_sign_open_keccak) (const unsigned char *m, size_t mlen, const
 		return -1;
 
 	/* hram = H(R,A,m) */
-	ed25519_hram(hash, RS, pk, m, mlen);
+	ed25519_hram_keccak(hash, RS, pk, m, mlen);
 	expand256_modm(hram, hash, 64);
 
 	/* S */
