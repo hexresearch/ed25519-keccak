@@ -76,7 +76,6 @@ Library
                      Crypto.Hash.IO
                      Crypto.Hash.Algorithms
                      Crypto.PubKey.MaskGenFunction
-                     Crypto.PubKey.Ed25519
                      Crypto.PubKey.Ed25519Keccak
 
                      Crypto.Random

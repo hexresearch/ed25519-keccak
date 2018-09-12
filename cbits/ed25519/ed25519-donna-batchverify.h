@@ -217,7 +217,7 @@ ED25519_FN(ed25519_sign_open_batch) (const unsigned char **m, size_t *mlen, cons
 		batchsize = (num > max_batch_size) ? max_batch_size : num;
 
 		/* generate r (scalars[batchsize+1]..scalars[2*batchsize] */
-		ED25519_FN(ed25519_randombytes_unsafe) (batch.r, batchsize * 16);
+		ED25519_FN(ed25519_keccak_randombytes_unsafe) (batch.r, batchsize * 16);
 		r_scalars = &batch.scalars[batchsize + 1];
 		for (i = 0; i < batchsize; i++)
 			expand256_modm(r_scalars[i], batch.r[i], 16);

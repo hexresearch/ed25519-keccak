@@ -88,7 +88,7 @@ toPublic :: SecretKey -> PublicKey
 toPublic (SecretKey sec) = PublicKey <$>
     B.allocAndFreeze publicKeySize $ \result ->
     withByteArray sec              $ \psec   ->
-        ccryptonite_ed25519_publickey_keccak psec result
+        ccryptonite_ed25519_keccak_publickey psec result
 {-# NOINLINE toPublic #-}
 
 -- | Sign a message using the key pair
@@ -98,7 +98,7 @@ sign secret public message =
         withByteArray secret  $ \sec ->
         withByteArray public  $ \pub ->
         withByteArray message $ \msg ->
-             ccryptonite_ed25519_sign_keccak msg (fromIntegral msgLen) sec pub sig
+             ccryptonite_ed25519_keccak_sign msg (fromIntegral msgLen) sec pub sig
   where
     !msgLen = B.length message
 
@@ -108,7 +108,7 @@ verify public message signatureVal = unsafeDoIO $
     withByteArray signatureVal $ \sig ->
     withByteArray public       $ \pub ->
     withByteArray message      $ \msg -> do
-      r <- ccryptonite_ed25519_sign_open_keccak msg (fromIntegral msgLen) pub sig
+      r <- ccryptonite_ed25519_keccak_sign_open msg (fromIntegral msgLen) pub sig
       return (r == 0)
   where
     !msgLen = B.length message
@@ -129,20 +129,20 @@ secretKeySize = 32
 signatureSize :: Int
 signatureSize = 64
 
-foreign import ccall "cryptonite_ed25519_publickey_keccak"
-    ccryptonite_ed25519_publickey_keccak :: Ptr SecretKey -- secret key
+foreign import ccall "cryptonite_ed25519_keccak_publickey"
+    ccryptonite_ed25519_keccak_publickey :: Ptr SecretKey -- secret key
                                          -> Ptr PublicKey -- public key
                                          -> IO ()
 
-foreign import ccall "cryptonite_ed25519_sign_open_keccak"
-    ccryptonite_ed25519_sign_open_keccak :: Ptr Word8     -- message
+foreign import ccall "cryptonite_ed25519_keccak_sign_open"
+    ccryptonite_ed25519_keccak_sign_open :: Ptr Word8     -- message
                                   -> CSize         -- message len
                                   -> Ptr PublicKey -- public
                                   -> Ptr Signature -- signature
                                   -> IO CInt
 
-foreign import ccall "cryptonite_ed25519_sign_keccak"
-    ccryptonite_ed25519_sign_keccak :: Ptr Word8     -- message
+foreign import ccall "cryptonite_ed25519_keccak_sign"
+    ccryptonite_ed25519_keccak_sign :: Ptr Word8     -- message
                                     -> CSize         -- message len
                                     -> Ptr SecretKey -- secret
                                     -> Ptr PublicKey -- public
